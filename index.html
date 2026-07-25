@@ -54,6 +54,8 @@
         .theme-toggle { background: none; border: 1px solid var(--border); color: var(--text-main); padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 14px; transition: 0.3s; }
         .theme-toggle:hover { background: var(--border); }
 
+        .btn-install { background-color: var(--success); color: white; display: none; margin-bottom: 15px; border-radius: 20px; font-size: 14px; padding: 10px; }
+
         label { font-weight: 600; margin-top: 15px; display: block; font-size: 14px; color: var(--text-main); }
         input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; font-size: 14px; background-color: var(--input-bg); color: var(--text-main); transition: 0.3s; }
         input:focus, select:focus, textarea:focus { border-color: var(--primary); outline: none; }
@@ -129,6 +131,9 @@
         </div>
         <button class="theme-toggle" onclick="toggleTheme()">🌓 Theme</button>
     </div>
+
+    <!-- PWA Install Button -->
+    <button class="btn-install" id="installAppBtn">📲 Install App to Home Screen</button>
     
     <div class="api-box">
         <label style="margin-top:0;">1. Groq API Key (Primary & Fast):</label>
@@ -161,6 +166,7 @@
             <option value="Mixed">Mixed Types (All below)</option>
             <option value="Easy">Easy (Direct answers)</option>
             <option value="Hard">Hard (Specific details)</option>
+            <option value="ShortOptions">Short Options (1-3 words Trivia Style)</option>
         </optgroup>
         <optgroup label="Specific Formats">
             <option value="FillInTheBlank">Fill in the Blanks</option>
@@ -246,7 +252,7 @@
     
     <div id="status"></div>
 
-    <!-- TABS SECTION (Hidden until generated) -->
+    <!-- TABS SECTION -->
     <div class="tabs" id="resultTabs">
         <div class="tab active" onclick="switchTab('rawOutput')">📝 Text & Export</div>
         <div class="tab" onclick="switchTab('playMode')">🎮 Play Quiz</div>
@@ -285,13 +291,10 @@
 
 <script>
     let generatedData = null;
-    
-    // Play Mode Variables
     let playIndex = 0;
     let playScore = 0;
     let currentQuizData = [];
 
-    // Load API keys and theme on startup
     window.onload = () => {
         if(localStorage.getItem('groqKey')) document.getElementById('groqKey').value = localStorage.getItem('groqKey');
         if(localStorage.getItem('geminiKey')) document.getElementById('geminiKey').value = localStorage.getItem('geminiKey');
@@ -300,7 +303,6 @@
             document.documentElement.setAttribute('data-theme', 'dark');
         }
 
-        // Check for last generated quiz
         const lastQuiz = localStorage.getItem('lastGeneratedQuiz');
         const lastRef = localStorage.getItem('lastQuizRef');
         if(lastQuiz && lastRef) {
@@ -357,7 +359,6 @@
         statusEl.style.color = "var(--primary)";
 
         try {
-            // Using a public open API for KJV Bible Text
             const apiUrl = `https://bible-api.com/${encodeURIComponent(reference)}?translation=kjv`;
             const response = await fetch(apiUrl);
             if (!response.ok) throw new Error("Reference not found.");
@@ -389,7 +390,6 @@
         if (!groqKey && !geminiKey) { showToast("Please provide at least one API Key!", true); return; }
         if (!bibleText) { showToast("Please fetch the Bible text first!", true); return; }
 
-        // Save keys locally for convenience
         if(groqKey) localStorage.setItem('groqKey', groqKey);
         if(geminiKey) localStorage.setItem('geminiKey', geminiKey);
 
@@ -414,6 +414,7 @@
             case 'LocationTravelBased': dynamicInstruction = `Create ONLY questions regarding geography, places, and travel.`; break;
             case 'Easy': dynamicInstruction = `Create straightforward and easy questions with obvious wrong distractors.`; break;
             case 'Hard': dynamicInstruction = `Create very difficult, detail-oriented questions where distractors are extremely similar and tricky.`; break;
+            case 'ShortOptions': dynamicInstruction = `Create trivia-style questions where all 4 options (A, B, C, D) are extremely short (maximum 1 to 3 words each).`; break;
             default: dynamicInstruction = `Mix various question styles (Facts, Quotes, Reasoning).`;
         }
 
@@ -423,8 +424,8 @@ Reference context: ${reference}
 Rules:
 1. Target Audience: ${audienceInstruction}
 2. Style: ${dynamicInstruction}
-3. Distractors (wrong options) must be logical and biblical. Don't make them obviously silly unless it's for Kids.
-4. Output ONLY a strict JSON object containing a "questions" array.
+3. Distractors (wrong options) must be logical and biblical.
+4. Output ONLY a strict JSON object containing a "questions" array. No extra text or markdown formatting outside JSON if possible.
 5. Schema per question:
 {
   "questionText": "...",
@@ -444,7 +445,6 @@ ${bibleText}`;
         let jsonString = null;
         let success = false;
 
-        // Try Groq First
         if (groqKey && !success) {
             statusEl.innerHTML = "⚡ Generating via <b>Groq</b>... ⏳";
             try {
@@ -468,7 +468,6 @@ ${bibleText}`;
             } catch (err) { console.warn("Groq Error", err); }
         }
 
-        // Fallback to Gemini
         if (geminiKey && !success) {
             statusEl.innerHTML = "🔄 Falling back to <b>Gemini</b>... ⏳";
             try {
@@ -489,12 +488,19 @@ ${bibleText}`;
 
         if (success && jsonString) {
             try {
-                jsonString = jsonString.replace(/```json/g, '').replace(/```/g, '').trim();
-                const jsonObject = JSON.parse(jsonString);
+                let cleanJson = jsonString;
+                const startIndex = cleanJson.indexOf('{');
+                const endIndex = cleanJson.lastIndexOf('}');
+                if (startIndex !== -1 && endIndex !== -1) {
+                    cleanJson = cleanJson.substring(startIndex, endIndex + 1);
+                }
+
+                const jsonObject = JSON.parse(cleanJson);
                 let finalArray = jsonObject.questions ? jsonObject.questions : jsonObject;
                 
-                // Shuffle options
                 finalArray.forEach(q => {
+                    if(q.correctAnswer) q.correctAnswer = q.correctAnswer.replace(/[^A-D]/g, '').charAt(0) || 'A';
+
                     let opts = [
                         { id: 'A', text: q.optionA, isCorrect: q.correctAnswer === 'A' },
                         { id: 'B', text: q.optionB, isCorrect: q.correctAnswer === 'B' },
@@ -548,7 +554,6 @@ ${bibleText}`;
         document.getElementById('outputPreview').value = textToDisplay;
     }
 
-    // --- PLAY MODE LOGIC ---
     function startPlayMode() {
         if(!generatedData) return;
         currentQuizData = JSON.parse(generatedData);
@@ -578,7 +583,6 @@ ${bibleText}`;
         let q = currentQuizData[playIndex];
         let allBtns = document.getElementById('playOptions').children;
         
-        // Disable all buttons
         for(let b of allBtns) b.disabled = true;
 
         if(selectedLetter === q.correctAnswer) {
@@ -587,13 +591,11 @@ ${bibleText}`;
             document.getElementById('quizScore').innerText = playScore;
         } else {
             btnElement.classList.add('wrong');
-            // Highlight correct one
             for(let b of allBtns) {
                 if(b.innerText.startsWith(q.correctAnswer)) b.classList.add('correct');
             }
         }
         
-        // Show reference alert below options
         const refDiv = document.createElement('div');
         refDiv.style.marginTop = "15px";
         refDiv.style.fontWeight = "bold";
@@ -615,7 +617,6 @@ ${bibleText}`;
         }
     }
 
-    // --- EXPORT LOGIC ---
     function copyFromPreview() {
         const box = document.getElementById('outputPreview');
         box.select(); navigator.clipboard.writeText(box.value);
@@ -685,16 +686,35 @@ ${bibleText}`;
     }
 </script>
 
-<!-- PWA Service Worker Registration -->
+<!-- PWA Service Worker & Install Logic -->
 <script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", function() {
-      navigator.serviceWorker
-        .register("sw.js")
-        .then(res => console.log("✅ Service Worker दर्ता भयो! PWA तयार छ।"))
-        .catch(err => console.log("❌ Service Worker दर्ता हुन सकेन:", err));
+    if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function() {
+            navigator.serviceWorker.register("sw.js")
+                .then(res => console.log("✅ Service Worker registered!"))
+                .catch(err => console.log("❌ SW registration failed:", err));
+        });
+    }
+
+    let deferredPrompt;
+    const installBtn = document.getElementById('installAppBtn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        installBtn.style.display = 'block';
     });
-  }
+
+    installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                installBtn.style.display = 'none';
+            }
+            deferredPrompt = null;
+        }
+    });
 </script>
 
 </body>
