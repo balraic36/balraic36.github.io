@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KJV Bible Quiz Generator AI</title>
+    
+    <!-- PWA Manifest र Theme -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2F5597">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -677,6 +683,18 @@ ${bibleText}`;
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         showToast(`Downloaded as .${ext} successfully!`);
     }
+</script>
+
+<!-- PWA Service Worker Registration -->
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function() {
+      navigator.serviceWorker
+        .register("sw.js")
+        .then(res => console.log("✅ Service Worker दर्ता भयो! PWA तयार छ।"))
+        .catch(err => console.log("❌ Service Worker दर्ता हुन सकेन:", err));
+    });
+  }
 </script>
 
 </body>
