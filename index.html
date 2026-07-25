@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KJV Bible Quiz Generator AI</title>
     
-    <!-- PWA Manifest र Theme -->
+    <!-- PWA Manifest & Theme -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2F5597">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -51,10 +51,11 @@
         h2 { color: var(--accent); margin: 0 0 5px 0; font-size: 24px; }
         .subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; font-weight: 600; }
         
-        .theme-toggle { background: none; border: 1px solid var(--border); color: var(--text-main); padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 14px; transition: 0.3s; }
+        .theme-toggle { background: none; border: 1px solid var(--border); color: var(--text-main); padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 14px; transition: 0.3s; font-weight: bold; }
         .theme-toggle:hover { background: var(--border); }
 
-        .btn-install { background-color: var(--success); color: white; display: none; margin-bottom: 15px; border-radius: 20px; font-size: 14px; padding: 10px; }
+        .btn-install { background-color: var(--success); color: white; display: none; margin-bottom: 15px; border-radius: 20px; font-size: 14px; padding: 12px; width: 100%; font-weight: bold; cursor: pointer; border: none; text-align: center; }
+        .btn-install:hover { background-color: #218838; }
 
         label { font-weight: 600; margin-top: 15px; display: block; font-size: 14px; color: var(--text-main); }
         input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; font-size: 14px; background-color: var(--input-bg); color: var(--text-main); transition: 0.3s; }
@@ -63,7 +64,7 @@
         button { width: 100%; padding: 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 15px; cursor: pointer; transition: 0.3s; margin-top: 10px; }
         .btn-generate { background-color: var(--accent); color: white; margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 10px; }
         .btn-generate:hover { background-color: var(--accent-hover); }
-        .btn-generate:disabled { background-color: var(--text-muted); cursor: not-allowed; }
+        .btn-generate:disabled { background-color: var(--text-muted); cursor: not-allowed; opacity: 0.7; }
         
         .btn-fetch { background-color: var(--primary); color: white; padding: 10px; font-size: 14px; height: 100%; margin-top: 0; }
         .btn-fetch:hover { background-color: var(--primary-hover); }
@@ -87,7 +88,7 @@
         .tab-content.active { display: block; }
 
         /* Preview Area */
-        .preview-box { width: 100%; background: var(--input-bg); font-family: monospace; font-size: 14px; border: 1px solid var(--border); padding: 15px; border-radius: 6px; resize: vertical; min-height: 300px; color: var(--text-main); }
+        .preview-box { width: 100%; background: var(--input-bg); font-family: monospace; font-size: 14px; border: 1px solid var(--border); padding: 15px; border-radius: 6px; resize: vertical; min-height: 300px; color: var(--text-main); line-height: 1.5; }
         .btn-action { background-color: #17a2b8; color: white; padding: 12px; }
         .btn-action:hover { background-color: #138496; }
 
@@ -127,7 +128,7 @@
     <div class="header-row">
         <div>
             <h2>KJV Bible Quiz Generator ⚡</h2>
-            <div class="subtitle">AI-Powered Smart Question Builder</div>
+            <div class="subtitle">Strict KJV Wording & Smart Fallbacks</div>
         </div>
         <button class="theme-toggle" onclick="toggleTheme()">🌓 Theme</button>
     </div>
@@ -136,12 +137,12 @@
     <button class="btn-install" id="installAppBtn">📲 Install App to Home Screen</button>
     
     <div class="api-box">
-        <label style="margin-top:0;">1. Groq API Key (Primary & Fast):</label>
+        <label style="margin-top:0;">1. Groq API Key (Primary & Fast Engine):</label>
         <input type="password" id="groqKey" placeholder="gsk_...">
         
-        <label>2. Gemini API Key (Fallback):</label>
+        <label>2. Gemini API Key (Fallback Engine):</label>
         <input type="password" id="geminiKey" placeholder="AIza...">
-        <div class="hint-text">💡 <b>Info:</b> If Groq fails or is absent, the system automatically uses Gemini.</div>
+        <div class="hint-text">💡 <b>Safety Feature:</b> If Groq fails, encounters an error, or the key is missing, the system will instantly and automatically try Gemini.</div>
     </div>
 
     <div class="flex-row">
@@ -153,9 +154,9 @@
             <label>Target Audience:</label>
             <select id="audience">
                 <option value="General">General / All Ages</option>
-                <option value="Kids">Sunday School (Kids - Simple Words)</option>
-                <option value="Youth">Youth (Engaging & Relatable)</option>
-                <option value="Adults">Adults / Leaders (Deep & Theological)</option>
+                <option value="Kids">Sunday School (Simpler Concepts)</option>
+                <option value="Youth">Youth (Engaging)</option>
+                <option value="Adults">Adults / Leaders (Deep Details)</option>
             </select>
         </div>
     </div>
@@ -241,7 +242,7 @@
         </div>
     </div>
 
-    <label>Bible Text (KJV Context for AI):</label>
+    <label>Bible Text (Exact KJV Context):</label>
     <textarea id="bibleText" rows="5" placeholder="Select chapter/verses and click 'Fetch Text'..." readonly></textarea>
     <input type="hidden" id="chapterDetails">
 
@@ -260,9 +261,9 @@
 
     <div id="rawOutput" class="tab-content">
         <textarea id="outputPreview" class="preview-box" readonly></textarea>
-        <button class="btn-action" onclick="copyFromPreview()">📋 Copy All Text</button>
+        <button class="btn-action" onclick="copyFromPreview()" style="width:100%; margin-top:10px;">📋 Copy All Text</button>
         
-        <h4 style="margin: 20px 0 10px 0;">Export Options:</h4>
+        <h4 style="margin: 20px 0 10px 0; color: var(--text-main);">Export Options:</h4>
         <div class="download-grid">
             <button class="btn-word" onclick="downloadWord()">📝 Download Word (.doc)</button>
             <button class="btn-pdf" onclick="downloadPDF()">🖨️ Save as PDF / Print</button>
@@ -274,7 +275,7 @@
     <div id="playMode" class="tab-content">
         <div class="quiz-card" id="quizCard">
             <div class="quiz-score">Question <span id="currentQNum">1</span> of <span id="totalQNum">0</span> | Score: <span id="quizScore">0</span></div>
-            <h3 id="playQuestionText" style="margin-bottom: 20px;">Question goes here</h3>
+            <h3 id="playQuestionText" style="margin-bottom: 20px; line-height: 1.4;">Question goes here</h3>
             <div id="playOptions"></div>
             <button id="nextQBtn" style="display: none; background-color: var(--primary); color: white; margin-top: 20px;" onclick="nextPlayQuestion()">Next Question ➡️</button>
         </div>
@@ -295,6 +296,7 @@
     let playScore = 0;
     let currentQuizData = [];
 
+    // Load setup on start
     window.onload = () => {
         if(localStorage.getItem('groqKey')) document.getElementById('groqKey').value = localStorage.getItem('groqKey');
         if(localStorage.getItem('geminiKey')) document.getElementById('geminiKey').value = localStorage.getItem('geminiKey');
@@ -306,12 +308,15 @@
         const lastQuiz = localStorage.getItem('lastGeneratedQuiz');
         const lastRef = localStorage.getItem('lastQuizRef');
         if(lastQuiz && lastRef) {
-            generatedData = lastQuiz;
-            document.getElementById('chapterDetails').value = lastRef;
-            renderRawText(JSON.parse(lastQuiz));
-            document.getElementById('resultTabs').style.display = 'flex';
-            switchTab('rawOutput');
-            showToast("Loaded last generated quiz from history. 🕒");
+            try {
+                generatedData = lastQuiz;
+                document.getElementById('chapterDetails').value = lastRef;
+                renderRawText(JSON.parse(lastQuiz));
+                document.getElementById('resultTabs').style.display = 'flex';
+                switchTab('rawOutput');
+            } catch (e) {
+                console.log("Old cache cleared.");
+            }
         }
     };
 
@@ -328,7 +333,7 @@
         toast.style.backgroundColor = isError ? "var(--danger)" : "var(--success)";
         toast.style.color = "white";
         toast.className = "show";
-        setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+        setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3500);
     }
 
     function switchTab(tabId) {
@@ -341,12 +346,14 @@
         if(tabId === 'playMode') startPlayMode();
     }
 
+    // Safely Fetch KJV Text
     async function fetchBibleText() {
         const book = document.getElementById('bookSelect').value;
         const chapter = document.getElementById('chapter').value;
         const startV = document.getElementById('startVerse').value;
         const endV = document.getElementById('endVerse').value;
         const statusEl = document.getElementById('status');
+        const fetchBtn = document.querySelector('.btn-fetch');
 
         let reference = `${book} ${chapter}`;
         if (startV) {
@@ -355,8 +362,9 @@
         }
 
         document.getElementById('chapterDetails').value = reference;
-        statusEl.innerHTML = `Fetching KJV text for ${reference}... ⏳`;
+        statusEl.innerHTML = `Fetching EXACT KJV text for ${reference}... ⏳`;
         statusEl.style.color = "var(--primary)";
+        fetchBtn.disabled = true;
 
         try {
             const apiUrl = `https://bible-api.com/${encodeURIComponent(reference)}?translation=kjv`;
@@ -365,16 +373,18 @@
             
             const data = await response.json();
             document.getElementById('bibleText').value = data.text.trim();
-            statusEl.innerHTML = `✅ ${reference} loaded successfully!`;
+            statusEl.innerHTML = `✅ ${reference} loaded successfully! Ready to generate.`;
             statusEl.style.color = "var(--success)";
-            showToast("Bible text fetched successfully!");
+            showToast("KJV text fetched successfully!");
         } catch (error) {
-            statusEl.innerHTML = "❌ Error: Could not fetch text. Check your reference.";
+            statusEl.innerHTML = "❌ Error: Could not fetch text. Please check the chapter/verse numbers.";
             statusEl.style.color = "var(--danger)";
             showToast("Failed to fetch Bible text.", true);
         }
+        fetchBtn.disabled = false;
     }
 
+    // MAIN AI GENERATION LOGIC (WITH DOUBLE FAIL-SAFE)
     async function generateQuestions() {
         const groqKey = document.getElementById('groqKey').value.trim();
         const geminiKey = document.getElementById('geminiKey').value.trim();
@@ -387,12 +397,13 @@
         const btn = document.getElementById('generateBtn');
         const spinner = document.getElementById('genSpinner');
 
-        if (!groqKey && !geminiKey) { showToast("Please provide at least one API Key!", true); return; }
-        if (!bibleText) { showToast("Please fetch the Bible text first!", true); return; }
+        if (!groqKey && !geminiKey) { showToast("Please provide at least one API Key (Groq or Gemini)!", true); return; }
+        if (!bibleText) { showToast("Please fetch the Bible text first before generating!", true); return; }
 
         if(groqKey) localStorage.setItem('groqKey', groqKey);
         if(geminiKey) localStorage.setItem('geminiKey', geminiKey);
 
+        // Lock button during processing to prevent double clicks
         btn.disabled = true;
         spinner.style.display = 'inline-block';
         document.getElementById('resultTabs').style.display = 'none';
@@ -400,33 +411,36 @@
         document.getElementById('playMode').classList.remove('active');
 
         let audienceInstruction = "";
-        if (audience === "Kids") audienceInstruction = "Use very simple English, short sentences, and easy concepts suited for children (Sunday School).";
-        else if (audience === "Youth") audienceInstruction = "Use engaging, modern phrasing suitable for teenagers and youth.";
-        else if (audience === "Adults") audienceInstruction = "Include deep theological phrasing, strict details, and advanced vocabulary suited for adult bible study leaders.";
-        else audienceInstruction = "Use standard, clear English suitable for a general audience.";
+        if (audience === "Kids") audienceInstruction = "Concepts should be accessible, but still strictly use the KJV names and basic KJV wording.";
+        else if (audience === "Youth") audienceInstruction = "Questions should be engaging but retain complete KJV accuracy.";
+        else if (audience === "Adults") audienceInstruction = "Questions should test deep detail and strictly use advanced KJV vocabulary found in the text.";
+        else audienceInstruction = "Use standard clear structure, but strictly retain KJV vocabulary.";
 
         let dynamicInstruction = "";
         switch(difficulty) {
-            case 'FillInTheBlank': dynamicInstruction = `Create ONLY "Fill in the blank" style questions.`; break;
+            case 'FillInTheBlank': dynamicInstruction = `Create ONLY "Fill in the blank" questions using exact KJV phrases.`; break;
             case 'FactBased': dynamicInstruction = `Create ONLY Fact-based questions (Who, What, How many, Where).`; break;
-            case 'QuoteBased': dynamicInstruction = `Create ONLY "Who said this to whom" style questions based on quotes.`; break;
-            case 'ReasoningBased': dynamicInstruction = `Create ONLY reasoning questions (Why did this happen, What was the reason).`; break;
-            case 'LocationTravelBased': dynamicInstruction = `Create ONLY questions regarding geography, places, and travel.`; break;
-            case 'Easy': dynamicInstruction = `Create straightforward and easy questions with obvious wrong distractors.`; break;
-            case 'Hard': dynamicInstruction = `Create very difficult, detail-oriented questions where distractors are extremely similar and tricky.`; break;
-            case 'ShortOptions': dynamicInstruction = `Create trivia-style questions where all 4 options (A, B, C, D) are extremely short (maximum 1 to 3 words each).`; break;
-            default: dynamicInstruction = `Mix various question styles (Facts, Quotes, Reasoning).`;
+            case 'QuoteBased': dynamicInstruction = `Create ONLY "Who said this to whom" questions based on exact KJV quotes.`; break;
+            case 'ReasoningBased': dynamicInstruction = `Create ONLY reasoning questions (Why did this happen according to the exact text).`; break;
+            case 'LocationTravelBased': dynamicInstruction = `Create ONLY questions regarding geography, places, and physical movements mentioned.`; break;
+            case 'Easy': dynamicInstruction = `Create straightforward questions. Distractors should be obviously wrong but still sound Biblical.`; break;
+            case 'Hard': dynamicInstruction = `Create very difficult, detail-oriented questions. Distractors must be extremely similar to the true text to trick the reader.`; break;
+            case 'ShortOptions': dynamicInstruction = `Create trivia-style questions where ALL 4 options (A, B, C, D) are extremely short (maximum 1 to 3 words each).`; break;
+            default: dynamicInstruction = `Mix various question styles (Facts, Quotes, Fill-in-blanks).`;
         }
 
-        const prompt = `You are a highly accurate Bible Quiz generator. Read the provided KJV Bible text and generate exactly ${qCount} multiple-choice questions (MCQs) in English.
+        // The ultra-strict Prompt for exact KJV wording and Question Mark formatting
+        const prompt = `You are a highly accurate KJV Bible Quiz generator. Read the provided KJV Bible text and generate exactly ${qCount} multiple-choice questions (MCQs) in English.
 Reference context: ${reference}
 
-Rules:
-1. Target Audience: ${audienceInstruction}
-2. Style: ${dynamicInstruction}
-3. Distractors (wrong options) must be logical and biblical.
-4. Output ONLY a strict JSON object containing a "questions" array. No extra text or markdown formatting outside JSON if possible.
-5. Schema per question:
+*** CRITICAL RULES FOR KJV ACCURACY & FORMATTING ***
+1. EXACT KJV WORDING: You MUST use the exact archaic words and phrasing exactly as they appear in the provided KJV text. Do NOT modernize, paraphrase, or change any words (e.g., keep "thou", "hath", "spake", "damsel"). Options must be verbatim quotes or exact terms.
+2. FULL QUESTION SENTENCES: Every single question in "questionText" MUST be written as a proper, grammatically correct full sentence ending with a question mark (?).
+3. STRICT PROHIBITION: NEVER write fragments, titles, or headings (Do NOT write "Ruth's nationality" or "Name of wife"). Instead, write "What was the nationality of Ruth?" or "Who was Elimelech's wife?".
+4. Target Audience: ${audienceInstruction}
+5. Style: ${dynamicInstruction}
+6. Output ONLY a strict JSON object containing a "questions" array. No other text outside the JSON.
+7. JSON Schema per question:
 {
   "questionText": "...",
   "optionA": "...",
@@ -437,7 +451,7 @@ Rules:
   "correctAnswerText": "...",
   "verseReference": "..."
 }
-Note: For verseReference, always include the book name (e.g., 'John 3:16').
+Note: For verseReference, always include the book name (e.g., 'Ruth 1:22').
 
 Bible Text to analyze:
 ${bibleText}`;
@@ -445,8 +459,9 @@ ${bibleText}`;
         let jsonString = null;
         let success = false;
 
+        // --- ENGINE 1: GROQ ---
         if (groqKey && !success) {
-            statusEl.innerHTML = "⚡ Generating via <b>Groq</b>... ⏳";
+            statusEl.innerHTML = "⚡ Generating via <b>Groq Engine</b>... ⏳";
             try {
                 const res = await fetch(`https://api.groq.com/openai/v1/chat/completions`, {
                     method: 'POST',
@@ -454,40 +469,52 @@ ${bibleText}`;
                     body: JSON.stringify({
                         model: "llama-3.3-70b-versatile",
                         messages: [
-                            { role: "system", content: "You are a JSON-only API. Return only valid JSON." },
+                            { role: "system", content: "You are a JSON-only API. You output strictly valid JSON format with no markdown blocks if possible." },
                             { role: "user", content: prompt }
                         ],
                         response_format: { type: "json_object" },
-                        temperature: 0.3
+                        temperature: 0.2 // Lower temp for exact KJV text matching
                     })
                 });
-                if(!res.ok) throw new Error("Groq failed.");
+                if(!res.ok) throw new Error("Groq API failed or limit reached.");
                 const data = await res.json();
                 jsonString = data.choices[0].message.content;
                 success = true;
-            } catch (err) { console.warn("Groq Error", err); }
+            } catch (err) { 
+                console.warn("Groq Error:", err.message); 
+                // Don't stop, it will automatically fallback to Gemini
+            }
         }
 
+        // --- ENGINE 2: GEMINI (FALLBACK) ---
         if (geminiKey && !success) {
-            statusEl.innerHTML = "🔄 Falling back to <b>Gemini</b>... ⏳";
+            statusEl.innerHTML = "🔄 Falling back to <b>Gemini Engine</b>... ⏳";
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3 } })
+                    body: JSON.stringify({ 
+                        contents: [{ parts: [{ text: prompt }] }], 
+                        generationConfig: { temperature: 0.2 } 
+                    })
                 });
-                if(!res.ok) throw new Error("Gemini failed.");
+                if(!res.ok) throw new Error("Gemini API failed or limit reached.");
                 const data = await res.json();
                 jsonString = data.candidates[0].content.parts[0].text;
                 success = true;
-            } catch (err) { console.warn("Gemini Error", err); }
+            } catch (err) { 
+                console.warn("Gemini Error:", err.message); 
+            }
         }
 
+        // Unlock button
         btn.disabled = false;
         spinner.style.display = 'none';
 
+        // --- JSON PARSING & DATA HANDLING (IRON-CLAD EXTRACTOR) ---
         if (success && jsonString) {
             try {
+                // Rock-solid JSON Extractor (Ignores AI conversational text)
                 let cleanJson = jsonString;
                 const startIndex = cleanJson.indexOf('{');
                 const endIndex = cleanJson.lastIndexOf('}');
@@ -499,8 +526,15 @@ ${bibleText}`;
                 let finalArray = jsonObject.questions ? jsonObject.questions : jsonObject;
                 
                 finalArray.forEach(q => {
+                    // Fix AI returning "Option A" instead of "A"
                     if(q.correctAnswer) q.correctAnswer = q.correctAnswer.replace(/[^A-D]/g, '').charAt(0) || 'A';
 
+                    // Final safety check: Force question mark at the end of the question text
+                    if (q.questionText && !q.questionText.trim().endsWith('?')) {
+                        q.questionText = q.questionText.trim() + '?';
+                    }
+
+                    // Shuffle options dynamically
                     let opts = [
                         { id: 'A', text: q.optionA, isCorrect: q.correctAnswer === 'A' },
                         { id: 'B', text: q.optionB, isCorrect: q.correctAnswer === 'B' },
@@ -511,19 +545,27 @@ ${bibleText}`;
                         const j = Math.floor(Math.random() * (i + 1));
                         [opts[i], opts[j]] = [opts[j], opts[i]];
                     }
-                    q.optionA = opts[0].text; q.optionB = opts[1].text; q.optionC = opts[2].text; q.optionD = opts[3].text;
+                    
+                    // Re-assign shuffled options
+                    q.optionA = opts[0].text; 
+                    q.optionB = opts[1].text; 
+                    q.optionC = opts[2].text; 
+                    q.optionD = opts[3].text;
+                    
+                    // Update correct answer letter
                     if (opts[0].isCorrect) q.correctAnswer = 'A';
                     else if (opts[1].isCorrect) q.correctAnswer = 'B';
                     else if (opts[2].isCorrect) q.correctAnswer = 'C';
                     else q.correctAnswer = 'D';
                 });
 
+                // Save to state & local storage
                 generatedData = JSON.stringify(finalArray, null, 4);
                 localStorage.setItem('lastGeneratedQuiz', generatedData);
                 localStorage.setItem('lastQuizRef', reference);
                 
+                // Render UI
                 renderRawText(finalArray);
-                
                 document.getElementById('resultTabs').style.display = 'flex';
                 switchTab('rawOutput');
                 
@@ -532,19 +574,20 @@ ${bibleText}`;
                 showToast("Questions generated!");
                 
             } catch (e) {
-                statusEl.innerHTML = "❌ AI returned invalid format. Try again.";
+                console.error("JSON Parsing Error:", e, jsonString);
+                statusEl.innerHTML = "❌ AI returned formatting error. Please click Generate again.";
                 statusEl.style.color = "var(--danger)";
             }
         } else {
-            statusEl.innerHTML = "❌ API Request Failed. Check your keys.";
+            statusEl.innerHTML = "❌ Both Groq and Gemini failed. Check your API keys and internet connection.";
             statusEl.style.color = "var(--danger)";
-            showToast("API generation failed.", true);
+            showToast("API generation completely failed.", true);
         }
     }
 
     function renderRawText(finalArray) {
         const reference = document.getElementById('chapterDetails').value;
-        let textToDisplay = `KJV Bible Quiz (${reference})\n\n`;
+        let textToDisplay = `Strict KJV Bible Quiz (${reference})\n\n`;
         finalArray.forEach((q, index) => {
             let exactText = q.correctAnswerText || q[`option${q.correctAnswer}`];
             textToDisplay += `Q${index + 1}: ${q.questionText}\n`;
@@ -554,6 +597,7 @@ ${bibleText}`;
         document.getElementById('outputPreview').value = textToDisplay;
     }
 
+    // --- PLAY MODE LOGIC ---
     function startPlayMode() {
         if(!generatedData) return;
         currentQuizData = JSON.parse(generatedData);
@@ -617,6 +661,7 @@ ${bibleText}`;
         }
     }
 
+    // --- EXPORT LOGIC ---
     function copyFromPreview() {
         const box = document.getElementById('outputPreview');
         box.select(); navigator.clipboard.writeText(box.value);
@@ -700,8 +745,11 @@ ${bibleText}`;
     const installBtn = document.getElementById('installAppBtn');
 
     window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent default mini-infobar
         e.preventDefault();
+        // Stash the event
         deferredPrompt = e;
+        // Show our custom install button
         installBtn.style.display = 'block';
     });
 
