@@ -133,7 +133,6 @@
         <button class="theme-toggle" onclick="toggleTheme()">🌓 Theme</button>
     </div>
 
-    <!-- PWA Install Button -->
     <button class="btn-install" id="installAppBtn">📲 Install App to Home Screen</button>
     
     <div class="api-box">
@@ -142,7 +141,7 @@
         
         <label>2. Gemini API Key (Fallback Engine):</label>
         <input type="password" id="geminiKey" placeholder="AIza...">
-        <div class="hint-text">💡 <b>Safety Feature:</b> If Groq fails, encounters an error, or the key is missing, the system will instantly and automatically try Gemini.</div>
+        <div class="hint-text">💡 <b>Safety Feature:</b> If Groq fails, the system automatically uses Gemini.</div>
     </div>
 
     <div class="flex-row">
@@ -165,12 +164,12 @@
     <select id="difficulty">
         <optgroup label="General Mix">
             <option value="Mixed">Mixed Types (All below)</option>
-            <option value="Easy">Easy (Direct answers)</option>
-            <option value="Hard">Hard (Specific details)</option>
+            <option value="Easy">Easy (Direct & Obvious answers)</option>
+            <option value="Hard">Hard (Tricky & Specific details)</option>
             <option value="ShortOptions">Short Options (1-3 words Trivia Style)</option>
         </optgroup>
         <optgroup label="Specific Formats">
-            <option value="FillInTheBlank">Fill in the Blanks</option>
+            <option value="FillInTheBlank">Fill in the Blanks (____)</option>
             <option value="FactBased">Fact-Based (Who, What, How many)</option>
             <option value="QuoteBased">Quote-Based (Who said to whom)</option>
             <option value="ReasoningBased">Reasoning (Why did it happen)</option>
@@ -296,7 +295,6 @@
     let playScore = 0;
     let currentQuizData = [];
 
-    // Load setup on start
     window.onload = () => {
         if(localStorage.getItem('groqKey')) document.getElementById('groqKey').value = localStorage.getItem('groqKey');
         if(localStorage.getItem('geminiKey')) document.getElementById('geminiKey').value = localStorage.getItem('geminiKey');
@@ -346,7 +344,6 @@
         if(tabId === 'playMode') startPlayMode();
     }
 
-    // Safely Fetch KJV Text
     async function fetchBibleText() {
         const book = document.getElementById('bookSelect').value;
         const chapter = document.getElementById('chapter').value;
@@ -384,7 +381,6 @@
         fetchBtn.disabled = false;
     }
 
-    // MAIN AI GENERATION LOGIC (WITH DOUBLE FAIL-SAFE)
     async function generateQuestions() {
         const groqKey = document.getElementById('groqKey').value.trim();
         const geminiKey = document.getElementById('geminiKey').value.trim();
@@ -403,44 +399,65 @@
         if(groqKey) localStorage.setItem('groqKey', groqKey);
         if(geminiKey) localStorage.setItem('geminiKey', geminiKey);
 
-        // Lock button during processing to prevent double clicks
         btn.disabled = true;
         spinner.style.display = 'inline-block';
         document.getElementById('resultTabs').style.display = 'none';
         document.getElementById('rawOutput').classList.remove('active');
         document.getElementById('playMode').classList.remove('active');
 
+        // NEW: Enforcing strict Audience instructions
         let audienceInstruction = "";
-        if (audience === "Kids") audienceInstruction = "Concepts should be accessible, but still strictly use the KJV names and basic KJV wording.";
-        else if (audience === "Youth") audienceInstruction = "Questions should be engaging but retain complete KJV accuracy.";
-        else if (audience === "Adults") audienceInstruction = "Questions should test deep detail and strictly use advanced KJV vocabulary found in the text.";
-        else audienceInstruction = "Use standard clear structure, but strictly retain KJV vocabulary.";
-
-        let dynamicInstruction = "";
-        switch(difficulty) {
-            case 'FillInTheBlank': dynamicInstruction = `Create ONLY "Fill in the blank" questions using exact KJV phrases.`; break;
-            case 'FactBased': dynamicInstruction = `Create ONLY Fact-based questions (Who, What, How many, Where).`; break;
-            case 'QuoteBased': dynamicInstruction = `Create ONLY "Who said this to whom" questions based on exact KJV quotes.`; break;
-            case 'ReasoningBased': dynamicInstruction = `Create ONLY reasoning questions (Why did this happen according to the exact text).`; break;
-            case 'LocationTravelBased': dynamicInstruction = `Create ONLY questions regarding geography, places, and physical movements mentioned.`; break;
-            case 'Easy': dynamicInstruction = `Create straightforward questions. Distractors should be obviously wrong but still sound Biblical.`; break;
-            case 'Hard': dynamicInstruction = `Create very difficult, detail-oriented questions. Distractors must be extremely similar to the true text to trick the reader.`; break;
-            case 'ShortOptions': dynamicInstruction = `Create trivia-style questions where ALL 4 options (A, B, C, D) are extremely short (maximum 1 to 3 words each).`; break;
-            default: dynamicInstruction = `Mix various question styles (Facts, Quotes, Fill-in-blanks).`;
+        if (audience === "Kids") {
+            audienceInstruction = "TARGET AUDIENCE: CHILDREN (Sunday School). You MUST write the question using very simple, basic English vocabulary. Focus only on obvious facts, names, animals, and major actions. Avoid deep theology. Keep questions short and easy to understand.";
+        } else if (audience === "Youth") {
+            audienceInstruction = "TARGET AUDIENCE: YOUTH/TEENS. Write engaging questions focusing on actions, moral lessons, and character interactions. Use clear, modern sentence structures for the question, but the answers must remain KJV accurate.";
+        } else if (audience === "Adults") {
+            audienceInstruction = "TARGET AUDIENCE: ADULT BIBLE SCHOLARS. Write highly advanced, deeply theological questions. Focus on obscure details, exact numbers, specific lineages, and deep doctrinal meaning.";
+        } else {
+            audienceInstruction = "TARGET AUDIENCE: GENERAL. Write standard questions suitable for a regular church congregation.";
         }
 
-        // The ultra-strict Prompt for exact KJV wording and Question Mark formatting
+        // NEW: Enforcing strict Question Styles
+        let dynamicInstruction = "";
+        switch(difficulty) {
+            case 'FillInTheBlank': 
+                dynamicInstruction = `QUESTION STYLE: FILL IN THE BLANK. Every single question MUST contain a blank space represented by '_______' (e.g., 'For God so loved the _______...'). The options must be words that perfectly fit the blank.`; 
+                break;
+            case 'FactBased': 
+                dynamicInstruction = `QUESTION STYLE: FACTUAL ONLY. Ask strict 'Who', 'What', 'Where', 'When', or 'How many' questions. No subjective interpretations.`; 
+                break;
+            case 'QuoteBased': 
+                dynamicInstruction = `QUESTION STYLE: QUOTATIONS. Every question MUST involve a quote from the text. Examples: 'Who said: "[Quote]"?' or 'To whom was it said: "[Quote]"?'.`; 
+                break;
+            case 'ReasoningBased': 
+                dynamicInstruction = `QUESTION STYLE: REASONING. Focus on 'Why' or 'How'. Ask about the underlying reasons, causes, or explanations explicitly mentioned in the text.`; 
+                break;
+            case 'LocationTravelBased': 
+                dynamicInstruction = `QUESTION STYLE: GEOGRAPHY. Focus entirely on places, cities, nations, mountains, rivers, and where people traveled.`; 
+                break;
+            case 'Easy': 
+                dynamicInstruction = `QUESTION STYLE: VERY EASY. Ask about the most prominent, well-known parts of the text. Make the wrong options (distractors) incredibly obvious so the correct answer stands out easily.`; 
+                break;
+            case 'Hard': 
+                dynamicInstruction = `QUESTION STYLE: EXTREMELY HARD. Ask about easily missed, tiny details. Make the wrong options (distractors) very tricky and deceptively similar to the correct answer.`; 
+                break;
+            case 'ShortOptions': 
+                dynamicInstruction = `QUESTION STYLE: TRIVIA / SHORT OPTIONS. CRITICAL RULE: The text for Option A, B, C, and D MUST be extremely short! Maximum 1 to 3 words per option (e.g., names, numbers, single objects). Do NOT write full sentences in the options.`; 
+                break;
+            default: 
+                dynamicInstruction = `QUESTION STYLE: MIXED. Combine various question styles (Facts, Quotes, Fill-in-blanks).`;
+        }
+
         const prompt = `You are a highly accurate KJV Bible Quiz generator. Read the provided KJV Bible text and generate exactly ${qCount} multiple-choice questions (MCQs) in English.
 Reference context: ${reference}
 
-*** CRITICAL RULES FOR KJV ACCURACY & FORMATTING ***
-1. EXACT KJV WORDING: You MUST use the exact archaic words and phrasing exactly as they appear in the provided KJV text. Do NOT modernize, paraphrase, or change any words (e.g., keep "thou", "hath", "spake", "damsel"). Options must be verbatim quotes or exact terms.
-2. FULL QUESTION SENTENCES: Every single question in "questionText" MUST be written as a proper, grammatically correct full sentence ending with a question mark (?).
-3. STRICT PROHIBITION: NEVER write fragments, titles, or headings (Do NOT write "Ruth's nationality" or "Name of wife"). Instead, write "What was the nationality of Ruth?" or "Who was Elimelech's wife?".
-4. Target Audience: ${audienceInstruction}
-5. Style: ${dynamicInstruction}
-6. Output ONLY a strict JSON object containing a "questions" array. No other text outside the JSON.
-7. JSON Schema per question:
+*** CRITICAL RULES FOR GENERATION ***
+1. ${audienceInstruction}
+2. ${dynamicInstruction}
+3. FULL QUESTION SENTENCES: Every single question in "questionText" MUST be written as a proper, grammatically correct full sentence ending with a question mark (?) unless it is a Fill in the Blank. NEVER write fragments or headings like "Ruth's nationality". Write "What was the nationality of Ruth?".
+4. STRICT KJV ACCURACY: Even if you simplify the question text for kids, the CORRECT ANSWER must remain factually true to the provided KJV text.
+5. Output ONLY a strict JSON object containing a "questions" array.
+6. JSON Schema per question:
 {
   "questionText": "...",
   "optionA": "...",
@@ -451,7 +468,6 @@ Reference context: ${reference}
   "correctAnswerText": "...",
   "verseReference": "..."
 }
-Note: For verseReference, always include the book name (e.g., 'Ruth 1:22').
 
 Bible Text to analyze:
 ${bibleText}`;
@@ -469,24 +485,23 @@ ${bibleText}`;
                     body: JSON.stringify({
                         model: "llama-3.3-70b-versatile",
                         messages: [
-                            { role: "system", content: "You are a JSON-only API. You output strictly valid JSON format with no markdown blocks if possible." },
+                            { role: "system", content: "You are a JSON-only API. You output strictly valid JSON format with no markdown." },
                             { role: "user", content: prompt }
                         ],
                         response_format: { type: "json_object" },
-                        temperature: 0.2 // Lower temp for exact KJV text matching
+                        temperature: 0.3
                     })
                 });
-                if(!res.ok) throw new Error("Groq API failed or limit reached.");
+                if(!res.ok) throw new Error("Groq API failed.");
                 const data = await res.json();
                 jsonString = data.choices[0].message.content;
                 success = true;
             } catch (err) { 
                 console.warn("Groq Error:", err.message); 
-                // Don't stop, it will automatically fallback to Gemini
             }
         }
 
-        // --- ENGINE 2: GEMINI (FALLBACK) ---
+        // --- ENGINE 2: GEMINI ---
         if (geminiKey && !success) {
             statusEl.innerHTML = "🔄 Falling back to <b>Gemini Engine</b>... ⏳";
             try {
@@ -495,10 +510,10 @@ ${bibleText}`;
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         contents: [{ parts: [{ text: prompt }] }], 
-                        generationConfig: { temperature: 0.2 } 
+                        generationConfig: { temperature: 0.3 } 
                     })
                 });
-                if(!res.ok) throw new Error("Gemini API failed or limit reached.");
+                if(!res.ok) throw new Error("Gemini API failed.");
                 const data = await res.json();
                 jsonString = data.candidates[0].content.parts[0].text;
                 success = true;
@@ -507,14 +522,11 @@ ${bibleText}`;
             }
         }
 
-        // Unlock button
         btn.disabled = false;
         spinner.style.display = 'none';
 
-        // --- JSON PARSING & DATA HANDLING (IRON-CLAD EXTRACTOR) ---
         if (success && jsonString) {
             try {
-                // Rock-solid JSON Extractor (Ignores AI conversational text)
                 let cleanJson = jsonString;
                 const startIndex = cleanJson.indexOf('{');
                 const endIndex = cleanJson.lastIndexOf('}');
@@ -526,15 +538,12 @@ ${bibleText}`;
                 let finalArray = jsonObject.questions ? jsonObject.questions : jsonObject;
                 
                 finalArray.forEach(q => {
-                    // Fix AI returning "Option A" instead of "A"
                     if(q.correctAnswer) q.correctAnswer = q.correctAnswer.replace(/[^A-D]/g, '').charAt(0) || 'A';
 
-                    // Final safety check: Force question mark at the end of the question text
-                    if (q.questionText && !q.questionText.trim().endsWith('?')) {
+                    if (q.questionText && !q.questionText.trim().endsWith('?') && !q.questionText.includes('___')) {
                         q.questionText = q.questionText.trim() + '?';
                     }
 
-                    // Shuffle options dynamically
                     let opts = [
                         { id: 'A', text: q.optionA, isCorrect: q.correctAnswer === 'A' },
                         { id: 'B', text: q.optionB, isCorrect: q.correctAnswer === 'B' },
@@ -546,25 +555,17 @@ ${bibleText}`;
                         [opts[i], opts[j]] = [opts[j], opts[i]];
                     }
                     
-                    // Re-assign shuffled options
-                    q.optionA = opts[0].text; 
-                    q.optionB = opts[1].text; 
-                    q.optionC = opts[2].text; 
-                    q.optionD = opts[3].text;
-                    
-                    // Update correct answer letter
+                    q.optionA = opts[0].text; q.optionB = opts[1].text; q.optionC = opts[2].text; q.optionD = opts[3].text;
                     if (opts[0].isCorrect) q.correctAnswer = 'A';
                     else if (opts[1].isCorrect) q.correctAnswer = 'B';
                     else if (opts[2].isCorrect) q.correctAnswer = 'C';
                     else q.correctAnswer = 'D';
                 });
 
-                // Save to state & local storage
                 generatedData = JSON.stringify(finalArray, null, 4);
                 localStorage.setItem('lastGeneratedQuiz', generatedData);
                 localStorage.setItem('lastQuizRef', reference);
                 
-                // Render UI
                 renderRawText(finalArray);
                 document.getElementById('resultTabs').style.display = 'flex';
                 switchTab('rawOutput');
@@ -587,7 +588,7 @@ ${bibleText}`;
 
     function renderRawText(finalArray) {
         const reference = document.getElementById('chapterDetails').value;
-        let textToDisplay = `Strict KJV Bible Quiz (${reference})\n\n`;
+        let textToDisplay = `KJV Bible Quiz (${reference})\n\n`;
         finalArray.forEach((q, index) => {
             let exactText = q.correctAnswerText || q[`option${q.correctAnswer}`];
             textToDisplay += `Q${index + 1}: ${q.questionText}\n`;
@@ -745,11 +746,8 @@ ${bibleText}`;
     const installBtn = document.getElementById('installAppBtn');
 
     window.addEventListener('beforeinstallprompt', (e) => {
-        // Prevent default mini-infobar
         e.preventDefault();
-        // Stash the event
         deferredPrompt = e;
-        // Show our custom install button
         installBtn.style.display = 'block';
     });
 
