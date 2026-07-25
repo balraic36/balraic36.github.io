@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KJV Bible Quiz Generator AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --container-bg: #ffffff;
+            --text-main: #333333;
+            --text-muted: #666666;
+            --primary: #2F5597;
+            --primary-hover: #1e3a68;
+            --accent: #f55036;
+            --accent-hover: #d43f27;
+            --border: #cccccc;
+            --input-bg: #ffffff;
+            --success: #28a745;
+            --danger: #dc3545;
+            --toast-bg: #333333;
+            --toast-text: #ffffff;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --container-bg: #1e1e1e;
+            --text-main: #e0e0e0;
+            --text-muted: #aaaaaa;
+            --primary: #4da3ff;
+            --primary-hover: #3182ce;
+            --accent: #ff6b52;
+            --accent-hover: #e55a42;
+            --border: #444444;
+            --input-bg: #2d2d2d;
+            --toast-bg: #e0e0e0;
+            --toast-text: #121212;
+        }
+
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); padding: 15px; margin: 0; transition: background-color 0.3s, color 0.3s; }
+        .container { background: var(--container-bg); padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); max-width: 650px; margin: auto; transition: background-color 0.3s; }
+        
+        .header-row { display: flex; justify-content: space-between; align-items: center; }
+        h2 { color: var(--accent); margin: 0 0 5px 0; font-size: 24px; }
+        .subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; font-weight: 600; }
+        
+        .theme-toggle { background: none; border: 1px solid var(--border); color: var(--text-main); padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 14px; transition: 0.3s; }
+        .theme-toggle:hover { background: var(--border); }
+
+        label { font-weight: 600; margin-top: 15px; display: block; font-size: 14px; color: var(--text-main); }
+        input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; font-size: 14px; background-color: var(--input-bg); color: var(--text-main); transition: 0.3s; }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); outline: none; }
+        
+        button { width: 100%; padding: 14px; border: none; border-radius: 6px; font-weight: bold; font-size: 15px; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        .btn-generate { background-color: var(--accent); color: white; margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 10px; }
+        .btn-generate:hover { background-color: var(--accent-hover); }
+        .btn-generate:disabled { background-color: var(--text-muted); cursor: not-allowed; }
+        
+        .btn-fetch { background-color: var(--primary); color: white; padding: 10px; font-size: 14px; height: 100%; margin-top: 0; }
+        .btn-fetch:hover { background-color: var(--primary-hover); }
+
+        .flex-row { display: flex; gap: 10px; align-items: flex-end; margin-top: 5px; }
+        .flex-row > div { flex: 1; }
+        
+        .api-box { background-color: var(--input-bg); border: 1px solid var(--border); padding: 15px; border-radius: 8px; margin-top: 10px; }
+        .hint-text { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.4; }
+
+        /* Loader */
+        .spinner { border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top: 3px solid white; width: 18px; height: 18px; animation: spin 1s linear infinite; display: none; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 10px; margin-top: 25px; border-bottom: 2px solid var(--border); display: none; }
+        .tab { padding: 10px 20px; cursor: pointer; font-weight: 600; color: var(--text-muted); border-bottom: 3px solid transparent; margin-bottom: -2px; }
+        .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+        .tab-content { display: none; padding-top: 20px; }
+        .tab-content.active { display: block; }
+
+        /* Preview Area */
+        .preview-box { width: 100%; background: var(--input-bg); font-family: monospace; font-size: 14px; border: 1px solid var(--border); padding: 15px; border-radius: 6px; resize: vertical; min-height: 300px; color: var(--text-main); }
+        .btn-action { background-color: #17a2b8; color: white; padding: 12px; }
+        .btn-action:hover { background-color: #138496; }
+
+        /* Download Buttons */
+        .download-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn-word { background-color: #2b579a; color: white; }
+        .btn-pdf { background-color: #d9534f; color: white; }
+        .btn-csv { background-color: #107c41; color: white; }
+        .btn-json { background-color: #6c757d; color: white; }
+
+        /* Play Quiz Mode */
+        .quiz-card { background: var(--input-bg); border: 1px solid var(--border); padding: 20px; border-radius: 8px; text-align: center; }
+        .quiz-option { display: block; width: 100%; text-align: left; background: var(--bg-color); border: 1px solid var(--border); padding: 12px; margin-top: 10px; border-radius: 6px; cursor: pointer; font-size: 15px; color: var(--text-main); transition: 0.2s; }
+        .quiz-option:hover { background: var(--border); }
+        .quiz-option.correct { background: var(--success); color: white; border-color: var(--success); }
+        .quiz-option.wrong { background: var(--danger); color: white; border-color: var(--danger); }
+        .quiz-score { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: var(--primary); }
+        
+        /* Toast Notification */
+        #toast { visibility: hidden; min-width: 250px; background-color: var(--toast-bg); color: var(--toast-text); text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 1000; left: 50%; bottom: 30px; transform: translateX(-50%); font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); opacity: 0; transition: opacity 0.3s, bottom 0.3s; }
+        #toast.show { visibility: visible; opacity: 1; bottom: 50px; }
+
+        #status { margin-top: 15px; font-size: 14px; font-weight: bold; text-align: center; line-height: 1.5; }
+        
+        #printArea { display: none; }
+        @media print {
+            body { background-color: white !important; color: black !important; }
+            .container, #toast { display: none !important; }
+            #printArea { display: block !important; padding: 20px; }
+            .page-break-safe { page-break-inside: avoid; margin-bottom: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="mainContainer">
+    <div class="header-row">
+        <div>
+            <h2>KJV Bible Quiz Generator ⚡</h2>
+            <div class="subtitle">AI-Powered Smart Question Builder</div>
+        </div>
+        <button class="theme-toggle" onclick="toggleTheme()">🌓 Theme</button>
+    </div>
+    
+    <div class="api-box">
+        <label style="margin-top:0;">1. Groq API Key (Primary & Fast):</label>
+        <input type="password" id="groqKey" placeholder="gsk_...">
+        
+        <label>2. Gemini API Key (Fallback):</label>
+        <input type="password" id="geminiKey" placeholder="AIza...">
+        <div class="hint-text">💡 <b>Info:</b> If Groq fails or is absent, the system automatically uses Gemini.</div>
+    </div>
+
+    <div class="flex-row">
+        <div>
+            <label>Question Count:</label>
+            <input type="number" id="qCount" value="10" min="1" max="50">
+        </div>
+        <div>
+            <label>Target Audience:</label>
+            <select id="audience">
+                <option value="General">General / All Ages</option>
+                <option value="Kids">Sunday School (Kids - Simple Words)</option>
+                <option value="Youth">Youth (Engaging & Relatable)</option>
+                <option value="Adults">Adults / Leaders (Deep & Theological)</option>
+            </select>
+        </div>
+    </div>
+
+    <label>Question Type / Style:</label>
+    <select id="difficulty">
+        <optgroup label="General Mix">
+            <option value="Mixed">Mixed Types (All below)</option>
+            <option value="Easy">Easy (Direct answers)</option>
+            <option value="Hard">Hard (Specific details)</option>
+        </optgroup>
+        <optgroup label="Specific Formats">
+            <option value="FillInTheBlank">Fill in the Blanks</option>
+            <option value="FactBased">Fact-Based (Who, What, How many)</option>
+            <option value="QuoteBased">Quote-Based (Who said to whom)</option>
+            <option value="ReasoningBased">Reasoning (Why did it happen)</option>
+            <option value="LocationTravelBased">Geography & Locations</option>
+        </optgroup>
+    </select>
+
+    <div class="flex-row">
+        <div style="flex: 2;">
+            <label>Select Book:</label>
+            <select id="bookSelect">
+                <optgroup label="Old Testament">
+                    <option value="Genesis">Genesis</option><option value="Exodus">Exodus</option>
+                    <option value="Leviticus">Leviticus</option><option value="Numbers">Numbers</option>
+                    <option value="Deuteronomy">Deuteronomy</option><option value="Joshua">Joshua</option>
+                    <option value="Judges">Judges</option><option value="Ruth">Ruth</option>
+                    <option value="1 Samuel">1 Samuel</option><option value="2 Samuel">2 Samuel</option>
+                    <option value="1 Kings">1 Kings</option><option value="2 Kings">2 Kings</option>
+                    <option value="1 Chronicles">1 Chronicles</option><option value="2 Chronicles">2 Chronicles</option>
+                    <option value="Ezra">Ezra</option><option value="Nehemiah">Nehemiah</option>
+                    <option value="Esther">Esther</option><option value="Job">Job</option>
+                    <option value="Psalms">Psalms</option><option value="Proverbs">Proverbs</option>
+                    <option value="Ecclesiastes">Ecclesiastes</option><option value="Song of Solomon">Song of Solomon</option>
+                    <option value="Isaiah">Isaiah</option><option value="Jeremiah">Jeremiah</option>
+                    <option value="Lamentations">Lamentations</option><option value="Ezekiel">Ezekiel</option>
+                    <option value="Daniel">Daniel</option><option value="Hosea">Hosea</option>
+                    <option value="Joel">Joel</option><option value="Amos">Amos</option>
+                    <option value="Obadiah">Obadiah</option><option value="Jonah">Jonah</option>
+                    <option value="Micah">Micah</option><option value="Nahum">Nahum</option>
+                    <option value="Habakkuk">Habakkuk</option><option value="Zephaniah">Zephaniah</option>
+                    <option value="Haggai">Haggai</option><option value="Zechariah">Zechariah</option>
+                    <option value="Malachi">Malachi</option>
+                </optgroup>
+                <optgroup label="New Testament">
+                    <option value="Matthew">Matthew</option><option value="Mark">Mark</option>
+                    <option value="Luke">Luke</option><option value="John">John</option>
+                    <option value="Acts">Acts</option><option value="Romans">Romans</option>
+                    <option value="1 Corinthians">1 Corinthians</option><option value="2 Corinthians">2 Corinthians</option>
+                    <option value="Galatians">Galatians</option><option value="Ephesians">Ephesians</option>
+                    <option value="Philippians">Philippians</option><option value="Colossians">Colossians</option>
+                    <option value="1 Thessalonians">1 Thessalonians</option><option value="2 Thessalonians">2 Thessalonians</option>
+                    <option value="1 Timothy">1 Timothy</option><option value="2 Timothy">2 Timothy</option>
+                    <option value="Titus">Titus</option><option value="Philemon">Philemon</option>
+                    <option value="Hebrews">Hebrews</option><option value="James">James</option>
+                    <option value="1 Peter">1 Peter</option><option value="2 Peter">2 Peter</option>
+                    <option value="1 John">1 John</option><option value="2 John">2 John</option>
+                    <option value="3 John">3 John</option><option value="Jude">Jude</option>
+                    <option value="Revelation">Revelation</option>
+                </optgroup>
+            </select>
+        </div>
+        <div style="flex: 1;">
+            <label>Chapter:</label>
+            <input type="number" id="chapter" value="1" min="1">
+        </div>
+    </div>
+    
+    <div class="flex-row">
+        <div>
+            <label>Start Verse (Optional):</label>
+            <input type="number" id="startVerse" placeholder="All" min="1">
+        </div>
+        <div>
+            <label>End Verse (Optional):</label>
+            <input type="number" id="endVerse" placeholder="All" min="1">
+        </div>
+        <div>
+            <button class="btn-fetch" onclick="fetchBibleText()">📥 Fetch Text</button>
+        </div>
+    </div>
+
+    <label>Bible Text (KJV Context for AI):</label>
+    <textarea id="bibleText" rows="5" placeholder="Select chapter/verses and click 'Fetch Text'..." readonly></textarea>
+    <input type="hidden" id="chapterDetails">
+
+    <button class="btn-generate" id="generateBtn" onclick="generateQuestions()">
+        <span class="spinner" id="genSpinner"></span>
+        <span>Generate Questions</span>
+    </button>
+    
+    <div id="status"></div>
+
+    <!-- TABS SECTION (Hidden until generated) -->
+    <div class="tabs" id="resultTabs">
+        <div class="tab active" onclick="switchTab('rawOutput')">📝 Text & Export</div>
+        <div class="tab" onclick="switchTab('playMode')">🎮 Play Quiz</div>
+    </div>
+
+    <div id="rawOutput" class="tab-content">
+        <textarea id="outputPreview" class="preview-box" readonly></textarea>
+        <button class="btn-action" onclick="copyFromPreview()">📋 Copy All Text</button>
+        
+        <h4 style="margin: 20px 0 10px 0;">Export Options:</h4>
+        <div class="download-grid">
+            <button class="btn-word" onclick="downloadWord()">📝 Download Word (.doc)</button>
+            <button class="btn-pdf" onclick="downloadPDF()">🖨️ Save as PDF / Print</button>
+            <button class="btn-csv" onclick="downloadCSV()">📊 Download Excel (.csv)</button>
+            <button class="btn-json" onclick="downloadJSON()">⬇️ Download JSON</button>
+        </div>
+    </div>
+
+    <div id="playMode" class="tab-content">
+        <div class="quiz-card" id="quizCard">
+            <div class="quiz-score">Question <span id="currentQNum">1</span> of <span id="totalQNum">0</span> | Score: <span id="quizScore">0</span></div>
+            <h3 id="playQuestionText" style="margin-bottom: 20px;">Question goes here</h3>
+            <div id="playOptions"></div>
+            <button id="nextQBtn" style="display: none; background-color: var(--primary); color: white; margin-top: 20px;" onclick="nextPlayQuestion()">Next Question ➡️</button>
+        </div>
+        <div id="quizResult" style="display: none; text-align: center; padding: 20px;">
+            <h2>Quiz Completed! 🎉</h2>
+            <h3 id="finalScoreText">You scored X out of Y</h3>
+            <button class="btn-action" onclick="startPlayMode()">🔄 Restart Quiz</button>
+        </div>
+    </div>
+</div>
+
+<div id="printArea"></div>
+<div id="toast">Message here</div>
+
+<script>
+    let generatedData = null;
+    
+    // Play Mode Variables
+    let playIndex = 0;
+    let playScore = 0;
+    let currentQuizData = [];
+
+    // Load API keys and theme on startup
+    window.onload = () => {
+        if(localStorage.getItem('groqKey')) document.getElementById('groqKey').value = localStorage.getItem('groqKey');
+        if(localStorage.getItem('geminiKey')) document.getElementById('geminiKey').value = localStorage.getItem('geminiKey');
+        
+        if(localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+
+        // Check for last generated quiz
+        const lastQuiz = localStorage.getItem('lastGeneratedQuiz');
+        const lastRef = localStorage.getItem('lastQuizRef');
+        if(lastQuiz && lastRef) {
+            generatedData = lastQuiz;
+            document.getElementById('chapterDetails').value = lastRef;
+            renderRawText(JSON.parse(lastQuiz));
+            document.getElementById('resultTabs').style.display = 'flex';
+            switchTab('rawOutput');
+            showToast("Loaded last generated quiz from history. 🕒");
+        }
+    };
+
+    function toggleTheme() {
+        const current = document.documentElement.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+    }
+
+    function showToast(msg, isError = false) {
+        const toast = document.getElementById("toast");
+        toast.innerText = msg;
+        toast.style.backgroundColor = isError ? "var(--danger)" : "var(--success)";
+        toast.style.color = "white";
+        toast.className = "show";
+        setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+    }
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        
+        event.currentTarget.classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+
+        if(tabId === 'playMode') startPlayMode();
+    }
+
+    async function fetchBibleText() {
+        const book = document.getElementById('bookSelect').value;
+        const chapter = document.getElementById('chapter').value;
+        const startV = document.getElementById('startVerse').value;
+        const endV = document.getElementById('endVerse').value;
+        const statusEl = document.getElementById('status');
+
+        let reference = `${book} ${chapter}`;
+        if (startV) {
+            reference += `:${startV}`;
+            if (endV && parseInt(endV) > parseInt(startV)) reference += `-${endV}`;
+        }
+
+        document.getElementById('chapterDetails').value = reference;
+        statusEl.innerHTML = `Fetching KJV text for ${reference}... ⏳`;
+        statusEl.style.color = "var(--primary)";
+
+        try {
+            // Using a public open API for KJV Bible Text
+            const apiUrl = `https://bible-api.com/${encodeURIComponent(reference)}?translation=kjv`;
+            const response = await fetch(apiUrl);
+            if (!response.ok) throw new Error("Reference not found.");
+            
+            const data = await response.json();
+            document.getElementById('bibleText').value = data.text.trim();
+            statusEl.innerHTML = `✅ ${reference} loaded successfully!`;
+            statusEl.style.color = "var(--success)";
+            showToast("Bible text fetched successfully!");
+        } catch (error) {
+            statusEl.innerHTML = "❌ Error: Could not fetch text. Check your reference.";
+            statusEl.style.color = "var(--danger)";
+            showToast("Failed to fetch Bible text.", true);
+        }
+    }
+
+    async function generateQuestions() {
+        const groqKey = document.getElementById('groqKey').value.trim();
+        const geminiKey = document.getElementById('geminiKey').value.trim();
+        const reference = document.getElementById('chapterDetails').value.trim();
+        const qCount = document.getElementById('qCount').value;
+        const difficulty = document.getElementById('difficulty').value;
+        const audience = document.getElementById('audience').value;
+        const bibleText = document.getElementById('bibleText').value.trim();
+        const statusEl = document.getElementById('status');
+        const btn = document.getElementById('generateBtn');
+        const spinner = document.getElementById('genSpinner');
+
+        if (!groqKey && !geminiKey) { showToast("Please provide at least one API Key!", true); return; }
+        if (!bibleText) { showToast("Please fetch the Bible text first!", true); return; }
+
+        // Save keys locally for convenience
+        if(groqKey) localStorage.setItem('groqKey', groqKey);
+        if(geminiKey) localStorage.setItem('geminiKey', geminiKey);
+
+        btn.disabled = true;
+        spinner.style.display = 'inline-block';
+        document.getElementById('resultTabs').style.display = 'none';
+        document.getElementById('rawOutput').classList.remove('active');
+        document.getElementById('playMode').classList.remove('active');
+
+        let audienceInstruction = "";
+        if (audience === "Kids") audienceInstruction = "Use very simple English, short sentences, and easy concepts suited for children (Sunday School).";
+        else if (audience === "Youth") audienceInstruction = "Use engaging, modern phrasing suitable for teenagers and youth.";
+        else if (audience === "Adults") audienceInstruction = "Include deep theological phrasing, strict details, and advanced vocabulary suited for adult bible study leaders.";
+        else audienceInstruction = "Use standard, clear English suitable for a general audience.";
+
+        let dynamicInstruction = "";
+        switch(difficulty) {
+            case 'FillInTheBlank': dynamicInstruction = `Create ONLY "Fill in the blank" style questions.`; break;
+            case 'FactBased': dynamicInstruction = `Create ONLY Fact-based questions (Who, What, How many, Where).`; break;
+            case 'QuoteBased': dynamicInstruction = `Create ONLY "Who said this to whom" style questions based on quotes.`; break;
+            case 'ReasoningBased': dynamicInstruction = `Create ONLY reasoning questions (Why did this happen, What was the reason).`; break;
+            case 'LocationTravelBased': dynamicInstruction = `Create ONLY questions regarding geography, places, and travel.`; break;
+            case 'Easy': dynamicInstruction = `Create straightforward and easy questions with obvious wrong distractors.`; break;
+            case 'Hard': dynamicInstruction = `Create very difficult, detail-oriented questions where distractors are extremely similar and tricky.`; break;
+            default: dynamicInstruction = `Mix various question styles (Facts, Quotes, Reasoning).`;
+        }
+
+        const prompt = `You are a highly accurate Bible Quiz generator. Read the provided KJV Bible text and generate exactly ${qCount} multiple-choice questions (MCQs) in English.
+Reference context: ${reference}
+
+Rules:
+1. Target Audience: ${audienceInstruction}
+2. Style: ${dynamicInstruction}
+3. Distractors (wrong options) must be logical and biblical. Don't make them obviously silly unless it's for Kids.
+4. Output ONLY a strict JSON object containing a "questions" array.
+5. Schema per question:
+{
+  "questionText": "...",
+  "optionA": "...",
+  "optionB": "...",
+  "optionC": "...",
+  "optionD": "...",
+  "correctAnswer": "A/B/C/D",
+  "correctAnswerText": "...",
+  "verseReference": "..."
+}
+Note: For verseReference, always include the book name (e.g., 'John 3:16').
+
+Bible Text to analyze:
+${bibleText}`;
+
+        let jsonString = null;
+        let success = false;
+
+        // Try Groq First
+        if (groqKey && !success) {
+            statusEl.innerHTML = "⚡ Generating via <b>Groq</b>... ⏳";
+            try {
+                const res = await fetch(`https://api.groq.com/openai/v1/chat/completions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${groqKey}` },
+                    body: JSON.stringify({
+                        model: "llama-3.3-70b-versatile",
+                        messages: [
+                            { role: "system", content: "You are a JSON-only API. Return only valid JSON." },
+                            { role: "user", content: prompt }
+                        ],
+                        response_format: { type: "json_object" },
+                        temperature: 0.3
+                    })
+                });
+                if(!res.ok) throw new Error("Groq failed.");
+                const data = await res.json();
+                jsonString = data.choices[0].message.content;
+                success = true;
+            } catch (err) { console.warn("Groq Error", err); }
+        }
+
+        // Fallback to Gemini
+        if (geminiKey && !success) {
+            statusEl.innerHTML = "🔄 Falling back to <b>Gemini</b>... ⏳";
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3 } })
+                });
+                if(!res.ok) throw new Error("Gemini failed.");
+                const data = await res.json();
+                jsonString = data.candidates[0].content.parts[0].text;
+                success = true;
+            } catch (err) { console.warn("Gemini Error", err); }
+        }
+
+        btn.disabled = false;
+        spinner.style.display = 'none';
+
+        if (success && jsonString) {
+            try {
+                jsonString = jsonString.replace(/```json/g, '').replace(/```/g, '').trim();
+                const jsonObject = JSON.parse(jsonString);
+                let finalArray = jsonObject.questions ? jsonObject.questions : jsonObject;
+                
+                // Shuffle options
+                finalArray.forEach(q => {
+                    let opts = [
+                        { id: 'A', text: q.optionA, isCorrect: q.correctAnswer === 'A' },
+                        { id: 'B', text: q.optionB, isCorrect: q.correctAnswer === 'B' },
+                        { id: 'C', text: q.optionC, isCorrect: q.correctAnswer === 'C' },
+                        { id: 'D', text: q.optionD, isCorrect: q.correctAnswer === 'D' }
+                    ];
+                    for (let i = opts.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [opts[i], opts[j]] = [opts[j], opts[i]];
+                    }
+                    q.optionA = opts[0].text; q.optionB = opts[1].text; q.optionC = opts[2].text; q.optionD = opts[3].text;
+                    if (opts[0].isCorrect) q.correctAnswer = 'A';
+                    else if (opts[1].isCorrect) q.correctAnswer = 'B';
+                    else if (opts[2].isCorrect) q.correctAnswer = 'C';
+                    else q.correctAnswer = 'D';
+                });
+
+                generatedData = JSON.stringify(finalArray, null, 4);
+                localStorage.setItem('lastGeneratedQuiz', generatedData);
+                localStorage.setItem('lastQuizRef', reference);
+                
+                renderRawText(finalArray);
+                
+                document.getElementById('resultTabs').style.display = 'flex';
+                switchTab('rawOutput');
+                
+                statusEl.innerHTML = "✅ Quiz Generated Successfully!";
+                statusEl.style.color = "var(--success)";
+                showToast("Questions generated!");
+                
+            } catch (e) {
+                statusEl.innerHTML = "❌ AI returned invalid format. Try again.";
+                statusEl.style.color = "var(--danger)";
+            }
+        } else {
+            statusEl.innerHTML = "❌ API Request Failed. Check your keys.";
+            statusEl.style.color = "var(--danger)";
+            showToast("API generation failed.", true);
+        }
+    }
+
+    function renderRawText(finalArray) {
+        const reference = document.getElementById('chapterDetails').value;
+        let textToDisplay = `KJV Bible Quiz (${reference})\n\n`;
+        finalArray.forEach((q, index) => {
+            let exactText = q.correctAnswerText || q[`option${q.correctAnswer}`];
+            textToDisplay += `Q${index + 1}: ${q.questionText}\n`;
+            textToDisplay += `   A. ${q.optionA}\n   B. ${q.optionB}\n   C. ${q.optionC}\n   D. ${q.optionD}\n`;
+            textToDisplay += `✅ Answer: ${q.correctAnswer}. ${exactText} (Ref: ${q.verseReference})\n\n`;
+        });
+        document.getElementById('outputPreview').value = textToDisplay;
+    }
+
+    // --- PLAY MODE LOGIC ---
+    function startPlayMode() {
+        if(!generatedData) return;
+        currentQuizData = JSON.parse(generatedData);
+        playIndex = 0;
+        playScore = 0;
+        document.getElementById('totalQNum').innerText = currentQuizData.length;
+        document.getElementById('quizCard').style.display = 'block';
+        document.getElementById('quizResult').style.display = 'none';
+        renderPlayQuestion();
+    }
+
+    function renderPlayQuestion() {
+        let q = currentQuizData[playIndex];
+        document.getElementById('currentQNum').innerText = playIndex + 1;
+        document.getElementById('quizScore').innerText = playScore;
+        document.getElementById('playQuestionText').innerText = q.questionText;
+        document.getElementById('nextQBtn').style.display = 'none';
+        
+        let optionsHTML = '';
+        ['A', 'B', 'C', 'D'].forEach(letter => {
+            optionsHTML += `<button class="quiz-option" onclick="selectAnswer('${letter}', this)">${letter}. ${q[`option${letter}`]}</button>`;
+        });
+        document.getElementById('playOptions').innerHTML = optionsHTML;
+    }
+
+    function selectAnswer(selectedLetter, btnElement) {
+        let q = currentQuizData[playIndex];
+        let allBtns = document.getElementById('playOptions').children;
+        
+        // Disable all buttons
+        for(let b of allBtns) b.disabled = true;
+
+        if(selectedLetter === q.correctAnswer) {
+            btnElement.classList.add('correct');
+            playScore++;
+            document.getElementById('quizScore').innerText = playScore;
+        } else {
+            btnElement.classList.add('wrong');
+            // Highlight correct one
+            for(let b of allBtns) {
+                if(b.innerText.startsWith(q.correctAnswer)) b.classList.add('correct');
+            }
+        }
+        
+        // Show reference alert below options
+        const refDiv = document.createElement('div');
+        refDiv.style.marginTop = "15px";
+        refDiv.style.fontWeight = "bold";
+        refDiv.style.color = "var(--text-muted)";
+        refDiv.innerText = `Reference: ${q.verseReference}`;
+        document.getElementById('playOptions').appendChild(refDiv);
+
+        document.getElementById('nextQBtn').style.display = 'inline-block';
+    }
+
+    function nextPlayQuestion() {
+        playIndex++;
+        if(playIndex < currentQuizData.length) {
+            renderPlayQuestion();
+        } else {
+            document.getElementById('quizCard').style.display = 'none';
+            document.getElementById('quizResult').style.display = 'block';
+            document.getElementById('finalScoreText').innerText = `You scored ${playScore} out of ${currentQuizData.length}!`;
+        }
+    }
+
+    // --- EXPORT LOGIC ---
+    function copyFromPreview() {
+        const box = document.getElementById('outputPreview');
+        box.select(); navigator.clipboard.writeText(box.value);
+        showToast("Copied to clipboard! 📋");
+    }
+
+    function downloadJSON() {
+        if (!generatedData) return;
+        const blob = new Blob([generatedData], { type: "application/json" });
+        triggerDownload(blob, 'json');
+    }
+
+    function downloadCSV() {
+        if (!generatedData) return;
+        const data = JSON.parse(generatedData);
+        const headers = Object.keys(data[0]);
+        let csvContent = headers.join(",") + "\n";
+        data.forEach(row => {
+            csvContent += headers.map(h => `"${(row[h]||'').toString().replace(/"/g, '""')}"`).join(",") + "\n";
+        });
+        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        triggerDownload(blob, 'csv');
+    }
+
+    function downloadWord() {
+        if (!generatedData) return;
+        const data = JSON.parse(generatedData);
+        const ref = document.getElementById('chapterDetails').value;
+        let content = `<html xmlns:w='urn:schemas-microsoft-com:office:word'><head><meta charset='utf-8'><title>KJV Bible Quiz</title></head><body>`;
+        content += `<h1 style='text-align:center; color:#2F5597;'>KJV Bible Quiz</h1><h3 style='text-align:center;'>From: ${ref}</h3><hr>`;
+        data.forEach((q, i) => {
+            let ansText = q.correctAnswerText || q[`option${q.correctAnswer}`];
+            content += `<div><p><b>Q${i+1}: ${q.questionText}</b></p>`;
+            content += `<p style='margin-left:20px;'>A. ${q.optionA}<br>B. ${q.optionB}<br>C. ${q.optionC}<br>D. ${q.optionD}</p>`;
+            content += `<p style='margin-left:20px; color:#107c41;'><b>✅ Answer: ${q.correctAnswer}. ${ansText}</b> <i>(Ref: ${q.verseReference})</i></p></div><br>`;
+        });
+        content += `</body></html>`;
+        const blob = new Blob(['\ufeff', content], { type: 'application/msword' });
+        triggerDownload(blob, 'doc');
+    }
+
+    function downloadPDF() {
+        if (!generatedData) return;
+        const data = JSON.parse(generatedData);
+        const ref = document.getElementById('chapterDetails').value;
+        let content = `<div style="font-family: sans-serif; max-width: 800px; margin: auto;">`;
+        content += `<h2 style="text-align: center;">KJV Bible Quiz</h2><h4 style="text-align: center; color: #555;">${ref}</h4><hr style="margin-bottom:20px;">`;
+        data.forEach((q, i) => {
+            let ansText = q.correctAnswerText || q[`option${q.correctAnswer}`];
+            content += `<div class="page-break-safe" style="margin-bottom: 20px;">`;
+            content += `<div><b>Q${i+1}: ${q.questionText}</b></div>`;
+            content += `<div style="margin-left: 20px;">A. ${q.optionA}<br>B. ${q.optionB}<br>C. ${q.optionC}<br>D. ${q.optionD}</div>`;
+            content += `<div style="margin-left: 20px; margin-top:5px; font-weight:bold;">✅ Answer: ${q.correctAnswer}. ${ansText} <span style="font-weight:normal; font-size:12px;">(${q.verseReference})</span></div></div>`;
+        });
+        content += `</div>`;
+        document.getElementById('printArea').innerHTML = content;
+        setTimeout(() => { window.print(); }, 500);
+    }
+
+    function triggerDownload(blob, ext) {
+        const a = document.createElement("a");
+        let ref = document.getElementById('chapterDetails').value.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+        a.href = URL.createObjectURL(blob);
+        a.download = `kjv_bible_quiz_${ref}.${ext}`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        showToast(`Downloaded as .${ext} successfully!`);
+    }
+</script>
+
+</body>
+</html>
